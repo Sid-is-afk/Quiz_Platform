@@ -18,7 +18,12 @@ const QuizSchema = new mongoose.Schema({
     correctAnswer: String,
     correctOptionIndex: Number,
     explanation: String,
+    timeLimit: Number,
   }],
+  timeLimitPerQuestion: {
+    type: Number,
+    default: 20
+  },
   createdAt: {
     type: Date,
     default: Date.now,

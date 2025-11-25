@@ -1,157 +1,269 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Loader2, Check, Edit2, Play } from 'lucide-react';
-import { mockQuiz } from '../mockData';
+import { ArrowLeft, Sparkles, Clock, HelpCircle, Save, RotateCcw, Play, Loader2 } from 'lucide-react';
 
-const QuizCreator = () => {
+const CreateQuiz = () => {
     const navigate = useNavigate();
-    const [step, setStep] = useState('input'); // input, generating, editor
-    const [topic, setTopic] = useState('');
-    const [quiz, setQuiz] = useState(null);
-    const [editingId, setEditingId] = useState(null);
+    const [stage, setStage] = useState('config'); // 'config' | 'preview'
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [quizData, setQuizData] = useState(null);
 
-    const handleGenerate = (e) => {
+    // Form State
+    const [formData, setFormData] = useState({
+        topic: '',
+        difficulty: 'Medium',
+        amount: 5,
+        timeLimit: 20
+    });
+
+    const handleGenerate = async (e) => {
         e.preventDefault();
-        if (!topic.trim()) return;
-        setStep('generating');
+        setIsLoading(true);
+        setError(null);
 
-        // Simulate AI generation
-        setTimeout(() => {
-            setQuiz({ ...mockQuiz, title: topic });
-            setStep('editor');
-        }, 2000);
+        try {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/quizzes/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) throw new Error('Failed to generate quiz');
+
+            const data = await response.json();
+            setQuizData(data);
+            setStage('preview');
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handlePublish = () => {
-        navigate('/host/lobby');
+    const handleSaveAndHost = async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            // Ensure timeLimitPerQuestion is set on the quiz object if not already
+            const finalQuizData = {
+                ...quizData,
+                topic: formData.topic,
+                difficulty: formData.difficulty,
+                timeLimitPerQuestion: formData.timeLimit
+            };
+
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/quizzes/save`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(finalQuizData)
+            });
+
+            if (!response.ok) throw new Error('Failed to save quiz');
+
+            const { id } = await response.json();
+            navigate(`/host/lobby/${id}`);
+        } catch (err) {
+            setError(err.message);
+            setIsLoading(false);
+        }
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-6 min-h-[80vh] flex flex-col items-center justify-center">
-            <AnimatePresence mode="wait">
-                {step === 'input' && (
-                    <motion.div
-                        key="input"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="w-full max-w-lg text-center"
+        <div className="min-h-screen bg-slate-900 text-white p-6">
+            <div className="max-w-4xl mx-auto">
+                {/* Header */}
+                <div className="flex items-center gap-4 mb-8">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="p-2 hover:bg-white/10 rounded-full transition-colors"
                     >
-                        <div className="mb-8">
-                            <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-6 text-accent">
-                                <Sparkles size={40} />
-                            </div>
-                            <h1 className="text-4xl font-bold text-gray-800 mb-4">What's the topic?</h1>
-                            <p className="text-gray-600">
-                                Our AI will generate a unique quiz for you in seconds.
-                            </p>
-                        </div>
-                        <form onSubmit={handleGenerate} className="space-y-4">
-                            <textarea
-                                value={topic}
-                                onChange={(e) => setTopic(e.target.value)}
-                                placeholder="e.g., The History of Rome, 90s Pop Music, Quantum Physics..."
-                                className="w-full p-6 text-xl border-2 border-gray-200 rounded-2xl focus:border-accent focus:outline-none transition-colors resize-none h-40"
-                            />
-                            <button
-                                type="submit"
-                                disabled={!topic.trim()}
-                                className="w-full py-4 bg-accent text-white rounded-xl font-bold text-lg hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                            >
-                                <Sparkles size={20} /> Generate Quiz
-                            </button>
-                        </form>
-                    </motion.div>
-                )}
+                        <ArrowLeft className="w-6 h-6" />
+                    </button>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                        Create New Quiz
+                    </h1>
+                </div>
 
-                {step === 'generating' && (
-                    <motion.div
-                        key="generating"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 1.1 }}
-                        className="text-center"
-                    >
-                        <div className="relative w-32 h-32 mx-auto mb-8">
-                            <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                className="w-full h-full border-4 border-gray-200 border-t-accent rounded-full"
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center text-accent">
-                                <Sparkles size={40} />
-                            </div>
-                        </div>
-                        <h2 className="text-3xl font-bold text-gray-800 mb-2">Generating Questions...</h2>
-                        <p className="text-gray-500">Crafting the perfect quiz for "{topic}"</p>
-                    </motion.div>
-                )}
+                <AnimatePresence mode="wait">
+                    {stage === 'config' ? (
+                        <motion.div
+                            key="config"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="bg-slate-800/50 rounded-2xl p-8 border border-white/10 backdrop-blur-sm"
+                        >
+                            <form onSubmit={handleGenerate} className="space-y-6">
+                                {/* Topic */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-300">Quiz Topic</label>
+                                    <div className="relative">
+                                        <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
+                                        <input
+                                            type="text"
+                                            value={formData.topic}
+                                            onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+                                            placeholder="e.g., Solar System, 90s Music, JavaScript Basics"
+                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                            required
+                                        />
+                                    </div>
+                                </div>
 
-                {step === 'editor' && quiz && (
-                    <motion.div
-                        key="editor"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="w-full"
-                    >
-                        <div className="flex items-center justify-between mb-8">
-                            <div>
-                                <h1 className="text-3xl font-bold text-gray-800">{quiz.title}</h1>
-                                <p className="text-gray-500">{quiz.questions.length} Questions Generated</p>
-                            </div>
-                            <button
-                                onClick={handlePublish}
-                                className="px-8 py-3 bg-success text-white rounded-xl font-bold hover:bg-success/90 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-                            >
-                                <Play size={20} /> Publish & Host
-                            </button>
-                        </div>
+                                <div className="grid md:grid-cols-3 gap-6">
+                                    {/* Difficulty */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-300">Difficulty</label>
+                                        <select
+                                            value={formData.difficulty}
+                                            onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl p-4 outline-none focus:ring-2 focus:ring-purple-500"
+                                        >
+                                            <option value="Easy">Easy</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="Hard">Hard</option>
+                                        </select>
+                                    </div>
 
-                        <div className="space-y-4">
-                            {quiz.questions.map((q, index) => (
-                                <motion.div
-                                    key={q.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                    className={`bg-white p-6 rounded-xl border-2 transition-all cursor-pointer ${editingId === q.id ? 'border-primary ring-4 ring-primary/10' : 'border-gray-100 hover:border-gray-200'
-                                        }`}
-                                    onClick={() => setEditingId(editingId === q.id ? null : q.id)}
-                                >
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500 flex-shrink-0">
-                                            {index + 1}
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="text-lg font-semibold text-gray-800 mb-3">{q.text}</h3>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                {q.options.map((opt) => (
-                                                    <div
-                                                        key={opt.id}
-                                                        className={`p-3 rounded-lg text-sm font-medium flex items-center justify-between ${opt.id === q.correctAnswer
-                                                                ? 'bg-success/10 text-success border border-success/20'
-                                                                : 'bg-gray-50 text-gray-600'
-                                                            }`}
-                                                    >
-                                                        <span>{opt.text}</span>
-                                                        {opt.id === q.correctAnswer && <Check size={16} />}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="text-gray-400">
-                                            <Edit2 size={18} />
+                                    {/* Question Count */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-300">Questions: {formData.amount}</label>
+                                        <div className="h-[58px] flex items-center bg-slate-900/50 border border-white/10 rounded-xl px-4">
+                                            <input
+                                                type="range"
+                                                min="3"
+                                                max="10"
+                                                value={formData.amount}
+                                                onChange={(e) => setFormData({ ...formData, amount: parseInt(e.target.value) })}
+                                                className="w-full accent-purple-500"
+                                            />
                                         </div>
                                     </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+
+                                    {/* Time Limit */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-300">Time per Question</label>
+                                        <div className="relative">
+                                            <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
+                                            <select
+                                                value={formData.timeLimit}
+                                                onChange={(e) => setFormData({ ...formData, timeLimit: parseInt(e.target.value) })}
+                                                className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
+                                            >
+                                                <option value="10">10 Seconds</option>
+                                                <option value="20">20 Seconds</option>
+                                                <option value="30">30 Seconds</option>
+                                                <option value="60">60 Seconds</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {error && (
+                                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+                                        {error}
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/20 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {isLoading ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            Generating Magic...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="w-5 h-5" />
+                                            Generate Quiz with AI
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="preview"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, y: 20 }}
+                            className="space-y-6"
+                        >
+                            {/* Preview Header */}
+                            <div className="bg-slate-800/50 rounded-2xl p-6 border border-white/10 backdrop-blur-sm flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-white">{quizData?.title}</h2>
+                                    <p className="text-slate-400 mt-1">
+                                        {formData.topic} • {formData.difficulty} • {quizData?.questions?.length} Questions
+                                    </p>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setStage('config')}
+                                        className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                    >
+                                        <RotateCcw className="w-4 h-4" />
+                                        Regenerate
+                                    </button>
+                                    <button
+                                        onClick={handleSaveAndHost}
+                                        disabled={isLoading}
+                                        className="px-6 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold transition-colors shadow-lg shadow-green-500/20 flex items-center gap-2"
+                                    >
+                                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                                        Publish & Host
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Questions List */}
+                            <div className="grid gap-4">
+                                {quizData?.questions?.map((q, idx) => (
+                                    <motion.div
+                                        key={idx}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: idx * 0.1 }}
+                                        className="bg-slate-800/30 rounded-xl p-6 border border-white/5"
+                                    >
+                                        <div className="flex justify-between items-start mb-4">
+                                            <h3 className="text-lg font-medium text-white">
+                                                <span className="text-purple-400 mr-2">Q{idx + 1}.</span>
+                                                {q.questionText}
+                                            </h3>
+                                            <span className="text-xs font-mono bg-slate-700 px-2 py-1 rounded text-slate-300">
+                                                {q.timeLimit || formData.timeLimit}s
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {q.options.map((opt, optIdx) => (
+                                                <div
+                                                    key={optIdx}
+                                                    className={`p-3 rounded-lg text-sm border ${opt === q.correctAnswer
+                                                            ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                                                            : 'bg-slate-900/50 border-white/5 text-slate-400'
+                                                        }`}
+                                                >
+                                                    {opt}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
     );
 };
 
-export default QuizCreator;
+export default CreateQuiz;

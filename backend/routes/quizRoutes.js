@@ -6,11 +6,11 @@ const Quiz = require('../models/Quiz');
 // POST /api/quizzes/generate
 router.post('/generate', async (req, res) => {
     try {
-        const { topic, difficulty } = req.body;
+        const { topic, difficulty, amount, timeLimit } = req.body;
         if (!topic || !difficulty) {
             return res.status(400).json({ error: 'Topic and difficulty are required' });
         }
-        const quizData = await generateQuiz(topic, difficulty);
+        const quizData = await generateQuiz(topic, difficulty, amount, timeLimit);
         res.json(quizData);
     } catch (error) {
         res.status(500).json({ error: 'Failed to generate quiz' });
