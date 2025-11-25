@@ -8,13 +8,9 @@ if (!process.env.GEMINI_API_KEY) {
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Use 'gemini-1.5-flash' for speed and efficiency
-// We enforce JSON output using responseMimeType
+// Use 'gemini-2.0-flash-lite' as found in available models
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
-  generationConfig: {
-    responseMimeType: "application/json",
-  },
+  model: "gemini-2.0-flash-lite",
 });
 
 const generateQuiz = async (topic, difficulty, questionCount = 5, timeLimit = 20) => {
@@ -39,19 +35,23 @@ const generateQuiz = async (topic, difficulty, questionCount = 5, timeLimit = 20
         }
       ]
     }
+    IMPORTANT: Return ONLY the raw JSON string. Do not use Markdown formatting (no \`\`\`json).
   `;
 
   try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text();
+    let text = response.text();
+
+    // Clean up markdown code blocks if present
+    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
     // Parse the JSON string into an object
     return JSON.parse(text);
 
   } catch (error) {
     console.error("Error generating quiz with Gemini:", error);
-    throw new Error("Failed to generate quiz");
+    throw error; // Rethrow original error
   }
 };
 

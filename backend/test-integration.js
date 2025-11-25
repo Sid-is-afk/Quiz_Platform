@@ -28,7 +28,8 @@ async function testIntegration() {
             console.warn('⚠️ Warning: TimeLimit mismatch in question object.');
         }
     } catch (err) {
-        console.error('❌ Generate Failed:', err.response ? err.response.data : err.message);
+        console.error('❌ Generate Failed:', err.response ? JSON.stringify(err.response.data, null, 2) : err.message);
+        if (err.response) console.error('Status:', err.response.status);
         return;
     }
 
