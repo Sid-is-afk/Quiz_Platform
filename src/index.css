@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1F618D;
+  --color-accent: #F39C12;
+  --color-success: #27AE60;
+  --color-background: #F6FBFF;
+  --font-sans: 'Inter', 'Poppins', sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-gray-800 font-sans antialiased;
+  }
+}
