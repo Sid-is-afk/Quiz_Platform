@@ -1,28 +1,47 @@
+const Quiz = require('../models/Quiz');
+
 const games = {};
+
+const generateRoomCode = () => {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+};
 
 const socketHandler = (io) => {
     io.on('connection', (socket) => {
         console.log('User connected:', socket.id);
 
-        // Create Room
-        socket.on('create_room', ({ roomCode, quizId, hostName }) => {
-            if (games[roomCode]) {
-                socket.emit('error', { message: 'Room already exists' });
-                return;
+        // Create Game
+        socket.on('create_game', async ({ quizId }) => {
+            try {
+                const quiz = await Quiz.findById(quizId);
+                if (!quiz) {
+                    socket.emit('error', { message: 'Quiz not found' });
+                    return;
+                }
+
+                let roomCode = generateRoomCode();
+                while (games[roomCode]) {
+                    roomCode = generateRoomCode();
+                }
+
+                games[roomCode] = {
+                    quizId,
+                    hostSocketId: socket.id,
+                    players: [],
+                    gameState: 'LOBBY',
+                    currentQuestionIndex: 0,
+                    answers: {}, // { questionIndex: { playerId: answer } }
+                    quizData: quiz
+                };
+
+                socket.join(roomCode);
+                socket.emit('game_created', { roomCode });
+                console.log(`Game created: ${roomCode} for quiz ${quizId}`);
+
+            } catch (error) {
+                console.error('Error creating game:', error);
+                socket.emit('error', { message: 'Failed to create game' });
             }
-
-            games[roomCode] = {
-                quizId,
-                hostSocketId: socket.id,
-                players: [{ id: socket.id, name: hostName, score: 0 }],
-                gameState: 'LOBBY',
-                currentQuestionIndex: 0,
-                answers: {} // { questionIndex: { playerId: answer } }
-            };
-
-            socket.join(roomCode);
-            io.to(roomCode).emit('room_created', games[roomCode]);
-            console.log(`Room ${roomCode} created by ${hostName}`);
         });
 
         // Join Room
@@ -38,8 +57,16 @@ const socketHandler = (io) => {
                 return;
             }
 
+            // Check for duplicate names
+            if (game.players.some(p => p.name === playerName)) {
+                socket.emit('error', { message: 'Name already taken' });
+                return;
+            }
+
             game.players.push({ id: socket.id, name: playerName, score: 0 });
             socket.join(roomCode);
+
+            // Notify everyone in the room (including the new player)
             io.to(roomCode).emit('player_joined', game.players);
             console.log(`${playerName} joined room ${roomCode}`);
         });
@@ -71,7 +98,7 @@ const socketHandler = (io) => {
 
             game.answers[questionIndex][socket.id] = answer;
 
-            // Check if all players answered (simple logic)
+            // Check if all players answered
             const answeredCount = Object.keys(game.answers[questionIndex]).length;
             if (answeredCount === game.players.length) {
                 io.to(roomCode).emit('all_answered');
@@ -89,22 +116,40 @@ const socketHandler = (io) => {
 
             game.currentQuestionIndex++;
             // Logic to check if game over would go here
-
-            io.to(roomCode).emit('next_question', game.currentQuestionIndex);
+            if (game.currentQuestionIndex >= game.quizData.questions.length) {
+                game.gameState = 'FINISHED';
+                io.to(roomCode).emit('game_over');
+            } else {
+                io.to(roomCode).emit('next_question', game.currentQuestionIndex);
+            }
         });
 
         socket.on('disconnect', () => {
             console.log('User disconnected:', socket.id);
-            // Handle cleanup if needed (remove player from game, etc.)
-            // For simplicity, we'll leave it for now or implement basic cleanup
+
             for (const roomCode in games) {
                 const game = games[roomCode];
+
+                // If host disconnects, maybe end game? For now just log it.
+                if (game.hostSocketId === socket.id) {
+                    console.log(`Host disconnected from room ${roomCode}`);
+                    // Optional: io.to(roomCode).emit('host_disconnected');
+                }
+
                 const playerIndex = game.players.findIndex(p => p.id === socket.id);
                 if (playerIndex !== -1) {
                     game.players.splice(playerIndex, 1);
                     io.to(roomCode).emit('player_left', game.players);
-                    if (game.players.length === 0) {
+
+                    // If room is empty and host is gone, delete it
+                    if (game.players.length === 0 && game.hostSocketId === socket.id) { // Or just check if empty?
+                        // Ideally keep room for a bit if host reconnects, but for prototype delete if empty
+                    }
+
+                    // Clean up empty rooms
+                    if (game.players.length === 0 && !io.sockets.adapter.rooms.get(roomCode)) {
                         delete games[roomCode];
+                        console.log(`Room ${roomCode} deleted`);
                     }
                     break;
                 }

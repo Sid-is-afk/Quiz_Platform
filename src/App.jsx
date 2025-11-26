@@ -15,7 +15,7 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<LandingPage />} />
           <Route path="create" element={<QuizCreator />} />
-          <Route path="host/lobby" element={<HostLobby />} />
+          <Route path="host/lobby/:quizId" element={<HostLobby />} />
           <Route path="play" element={<PlayerGame />} />
           <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="results" element={<Results />} />

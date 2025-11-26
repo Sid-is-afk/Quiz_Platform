@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Play, Plus, ArrowRight } from 'lucide-react';
 
 const LandingPage = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [gameCode, setGameCode] = useState('');
+
+    useEffect(() => {
+        const code = searchParams.get('code');
+        if (code) {
+            setGameCode(code);
+        }
+    }, [searchParams]);
 
     const handleJoinGame = (e) => {
         e.preventDefault();
         if (gameCode.trim()) {
-            navigate('/play');
+            navigate('/play', { state: { gameCode } });
         }
     };
 
