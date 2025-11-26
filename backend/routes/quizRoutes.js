@@ -1,7 +1,50 @@
 const express = require('express');
 const router = express.Router();
-const { generateQuiz } = require('../services/aiService');
+const { generateQuiz, generateQuizFromContent } = require('../services/aiService');
 const Quiz = require('../models/Quiz');
+const multer = require('multer');
+const pdf = require('pdf-parse');
+
+// Configure Multer
+const storage = multer.memoryStorage();
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
+// POST /api/quizzes/generate-from-file
+router.post('/generate-from-file', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        const { amount, timeLimit } = req.body;
+        const fileBuffer = req.file.buffer;
+        const mimeType = req.file.mimetype;
+
+        let content;
+        let type;
+
+        if (mimeType === 'application/pdf') {
+            const pdfData = await pdf(fileBuffer);
+            content = pdfData.text;
+            type = 'text';
+        } else if (mimeType.startsWith('image/')) {
+            content = fileBuffer.toString('base64');
+            type = 'image';
+        } else {
+            return res.status(400).json({ error: 'Unsupported file type. Please upload a PDF or an image.' });
+        }
+
+        const quizData = await generateQuizFromContent(content, type, mimeType, amount, timeLimit);
+        res.json(quizData);
+
+    } catch (error) {
+        console.error('File quiz generation error:', error);
+        res.status(500).json({ error: 'Failed to generate quiz from file', details: error.message });
+    }
+});
 
 // POST /api/quizzes/generate
 router.post('/generate', async (req, res) => {
@@ -13,7 +56,8 @@ router.post('/generate', async (req, res) => {
         const quizData = await generateQuiz(topic, difficulty, amount, timeLimit);
         res.json(quizData);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to generate quiz' });
+        console.error('Quiz generation error:', error);
+        res.status(500).json({ error: 'Failed to generate quiz', details: error.message });
     }
 });
 

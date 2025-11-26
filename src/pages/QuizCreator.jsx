@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Sparkles, Clock, HelpCircle, Save, RotateCcw, Play, Loader2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, Clock, HelpCircle, Save, RotateCcw, Play, Loader2, Upload, FileText, Image as ImageIcon } from 'lucide-react';
+
+import { API_URL } from '../config';
 
 const CreateQuiz = () => {
     const navigate = useNavigate();
     const [stage, setStage] = useState('config'); // 'config' | 'preview'
+    const [mode, setMode] = useState('topic'); // 'topic' | 'file'
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [quizData, setQuizData] = useState(null);
+    const [file, setFile] = useState(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -18,19 +22,47 @@ const CreateQuiz = () => {
         timeLimit: 20
     });
 
+    const handleFileChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
+        }
+    };
+
     const handleGenerate = async (e) => {
         e.preventDefault();
+        if (isLoading) return;
         setIsLoading(true);
         setError(null);
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/quizzes/generate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
+            let response;
 
-            if (!response.ok) throw new Error('Failed to generate quiz');
+            if (mode === 'topic') {
+                response = await fetch(`${API_URL}/api/quizzes/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+            } else {
+                if (!file) {
+                    throw new Error("Please upload a file");
+                }
+
+                const data = new FormData();
+                data.append('file', file);
+                data.append('amount', formData.amount);
+                data.append('timeLimit', formData.timeLimit);
+
+                response = await fetch(`${API_URL}/api/quizzes/generate-from-file`, {
+                    method: 'POST',
+                    body: data
+                });
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.details || errorData.error || 'Failed to generate quiz');
+            }
 
             const data = await response.json();
             setQuizData(data);
@@ -50,12 +82,12 @@ const CreateQuiz = () => {
             // Ensure timeLimitPerQuestion is set on the quiz object if not already
             const finalQuizData = {
                 ...quizData,
-                topic: formData.topic,
+                topic: mode === 'topic' ? formData.topic : (file ? file.name : 'Uploaded Content'),
                 difficulty: formData.difficulty,
                 timeLimitPerQuestion: formData.timeLimit
             };
 
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/quizzes/save`, {
+            const response = await fetch(`${API_URL}/api/quizzes/save`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(finalQuizData)
@@ -96,37 +128,101 @@ const CreateQuiz = () => {
                             exit={{ opacity: 0, x: -20 }}
                             className="bg-slate-800/50 rounded-2xl p-8 border border-white/10 backdrop-blur-sm"
                         >
+                            {/* Mode Toggle */}
+                            <div className="flex p-1 bg-slate-900/50 rounded-xl mb-8 w-fit">
+                                <button
+                                    onClick={() => setMode('topic')}
+                                    className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'topic'
+                                        ? 'bg-slate-700 text-white shadow-lg'
+                                        : 'text-slate-400 hover:text-white'
+                                        }`}
+                                >
+                                    By Topic
+                                </button>
+                                <button
+                                    onClick={() => setMode('file')}
+                                    className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'file'
+                                        ? 'bg-slate-700 text-white shadow-lg'
+                                        : 'text-slate-400 hover:text-white'
+                                        }`}
+                                >
+                                    Upload File
+                                </button>
+                            </div>
+
                             <form onSubmit={handleGenerate} className="space-y-6">
-                                {/* Topic */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-300">Quiz Topic</label>
-                                    <div className="relative">
-                                        <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
-                                        <input
-                                            type="text"
-                                            value={formData.topic}
-                                            onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                                            placeholder="e.g., Solar System, 90s Music, JavaScript Basics"
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-purple-500 outline-none transition-all"
-                                            required
-                                        />
+                                {mode === 'topic' ? (
+                                    /* Topic Input */
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-300">Quiz Topic</label>
+                                        <div className="relative">
+                                            <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
+                                            <input
+                                                type="text"
+                                                value={formData.topic}
+                                                onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+                                                placeholder="e.g., Solar System, 90s Music, JavaScript Basics"
+                                                className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                                required={mode === 'topic'}
+                                            />
+                                        </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    /* File Upload */
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-300">Upload Content (PDF or Image)</label>
+                                        <div className="relative border-2 border-dashed border-slate-700 rounded-xl p-8 text-center hover:border-purple-500/50 transition-colors group">
+                                            <input
+                                                type="file"
+                                                accept=".pdf,image/*"
+                                                onChange={handleFileChange}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                required={mode === 'file'}
+                                            />
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="p-4 bg-slate-800 rounded-full group-hover:bg-slate-700 transition-colors">
+                                                    {file ? (
+                                                        file.type.includes('pdf') ? <FileText className="w-8 h-8 text-blue-400" /> : <ImageIcon className="w-8 h-8 text-green-400" />
+                                                    ) : (
+                                                        <Upload className="w-8 h-8 text-slate-400" />
+                                                    )}
+                                                </div>
+                                                <div className="text-slate-400">
+                                                    {file ? (
+                                                        <span className="text-white font-medium">{file.name}</span>
+                                                    ) : (
+                                                        <>
+                                                            <span className="text-purple-400 font-medium">Click to upload</span> or drag and drop
+                                                            <p className="text-xs mt-1 text-slate-500">PDFs or Images supported</p>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-amber-400/80 flex items-center gap-2 mt-2">
+                                            <HelpCircle className="w-3 h-3" />
+                                            Please ensure the uploaded document contains questions only
+                                        </p>
+                                    </div>
+                                )}
 
                                 <div className="grid md:grid-cols-3 gap-6">
-                                    {/* Difficulty */}
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-300">Difficulty</label>
-                                        <select
-                                            value={formData.difficulty}
-                                            onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl p-4 outline-none focus:ring-2 focus:ring-purple-500"
-                                        >
-                                            <option value="Easy">Easy</option>
-                                            <option value="Medium">Medium</option>
-                                            <option value="Hard">Hard</option>
-                                        </select>
-                                    </div>
+                                    {/* Difficulty - Only for Topic Mode */
+                                        mode === 'topic' && (
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-slate-300">Difficulty</label>
+                                                <select
+                                                    value={formData.difficulty}
+                                                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                                                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl p-4 outline-none focus:ring-2 focus:ring-purple-500"
+                                                >
+                                                    <option value="Easy">Easy</option>
+                                                    <option value="Medium">Medium</option>
+                                                    <option value="Hard">Hard</option>
+                                                </select>
+                                            </div>
+                                        )
+                                    }
 
                                     {/* Question Count */}
                                     <div className="space-y-2">
@@ -200,7 +296,7 @@ const CreateQuiz = () => {
                                 <div>
                                     <h2 className="text-2xl font-bold text-white">{quizData?.title}</h2>
                                     <p className="text-slate-400 mt-1">
-                                        {formData.topic} • {formData.difficulty} • {quizData?.questions?.length} Questions
+                                        {mode === 'topic' ? formData.topic : 'Generated from File'} • {formData.difficulty} • {quizData?.questions?.length} Questions
                                     </p>
                                 </div>
                                 <div className="flex gap-3">
@@ -247,8 +343,8 @@ const CreateQuiz = () => {
                                                 <div
                                                     key={optIdx}
                                                     className={`p-3 rounded-lg text-sm border ${opt === q.correctAnswer
-                                                            ? 'bg-green-500/10 border-green-500/30 text-green-300'
-                                                            : 'bg-slate-900/50 border-white/5 text-slate-400'
+                                                        ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                                                        : 'bg-slate-900/50 border-white/5 text-slate-400'
                                                         }`}
                                                 >
                                                     {opt}
