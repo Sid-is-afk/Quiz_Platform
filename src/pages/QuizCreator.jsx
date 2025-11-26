@@ -241,19 +241,18 @@ const CreateQuiz = () => {
 
                                     {/* Time Limit */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-300">Time per Question</label>
+                                        <label className="text-sm font-medium text-slate-300">Time per questions in seconds</label>
                                         <div className="relative">
                                             <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
-                                            <select
+                                            <input
+                                                type="number"
+                                                min="5"
+                                                max="600"
                                                 value={formData.timeLimit}
-                                                onChange={(e) => setFormData({ ...formData, timeLimit: parseInt(e.target.value) })}
-                                                className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
-                                            >
-                                                <option value="10">10 Seconds</option>
-                                                <option value="20">20 Seconds</option>
-                                                <option value="30">30 Seconds</option>
-                                                <option value="60">60 Seconds</option>
-                                            </select>
+                                                onChange={(e) => setFormData({ ...formData, timeLimit: parseInt(e.target.value) || 0 })}
+                                                placeholder="Seconds"
+                                                className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-purple-500"
+                                            />
                                         </div>
                                     </div>
                                 </div>
