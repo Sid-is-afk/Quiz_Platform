@@ -71,6 +71,27 @@ const socketHandler = (io) => {
             console.log(`${playerName} joined room ${roomCode}`);
         });
 
+        // Helper to send question
+        const sendQuestion = (roomCode, game) => {
+            const question = game.quizData.questions[game.currentQuestionIndex];
+
+            // Format options for frontend (array of strings -> array of objects)
+            const formattedOptions = question.options.map((opt, index) => ({
+                id: index, // Using index as ID since simple string array
+                text: opt
+            }));
+
+            io.to(roomCode).emit('new_question', {
+                question: {
+                    text: question.questionText,
+                    options: formattedOptions,
+                    timeLimit: question.timeLimit || game.quizData.timeLimitPerQuestion || 20
+                },
+                questionIndex: game.currentQuestionIndex,
+                totalQuestions: game.quizData.questions.length
+            });
+        };
+
         // Start Game
         socket.on('start_game', (roomCode) => {
             const game = games[roomCode];
@@ -84,6 +105,8 @@ const socketHandler = (io) => {
             game.gameState = 'QUESTION';
             io.to(roomCode).emit('game_started', game);
             console.log(`Game started in room ${roomCode}`);
+
+            sendQuestion(roomCode, game);
         });
 
         // Submit Answer
@@ -96,7 +119,30 @@ const socketHandler = (io) => {
                 game.answers[questionIndex] = {};
             }
 
+            // Prevent multiple answers from same player for same question
+            if (game.answers[questionIndex][socket.id] !== undefined) return;
+
             game.answers[questionIndex][socket.id] = answer;
+
+            // Check correctness
+            const question = game.quizData.questions[questionIndex];
+            // answer is the index sent from frontend
+            const isCorrect = answer === question.correctOptionIndex;
+
+            // Update score
+            const player = game.players.find(p => p.id === socket.id);
+            if (player && isCorrect) {
+                player.score += 1000; // Simple scoring
+            }
+
+            // Emit result to player
+            socket.emit('answer_result', {
+                isCorrect,
+                score: player ? player.score : 0
+            });
+
+            // Notify room of updated scores
+            io.to(roomCode).emit('update_players', game.players);
 
             // Check if all players answered
             const answeredCount = Object.keys(game.answers[questionIndex]).length;
@@ -115,12 +161,12 @@ const socketHandler = (io) => {
             }
 
             game.currentQuestionIndex++;
-            // Logic to check if game over would go here
+
             if (game.currentQuestionIndex >= game.quizData.questions.length) {
                 game.gameState = 'FINISHED';
                 io.to(roomCode).emit('game_over');
             } else {
-                io.to(roomCode).emit('next_question', game.currentQuestionIndex);
+                sendQuestion(roomCode, game);
             }
         });
 
