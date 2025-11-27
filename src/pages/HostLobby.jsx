@@ -290,20 +290,45 @@ const HostLobby = () => {
             <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white p-8 text-center">
                 <Confetti numberOfPieces={500} recycle={false} />
                 <h1 className="text-6xl font-black mb-8">Game Over!</h1>
+
                 {winner && (
-                    <div className="bg-slate-800 p-12 rounded-3xl border-2 border-yellow-400 shadow-2xl mb-12">
+                    <div className="bg-slate-800 p-12 rounded-3xl border-2 border-yellow-400 shadow-2xl mb-12 transform hover:scale-105 transition-transform">
                         <Trophy className="text-yellow-400 w-32 h-32 mx-auto mb-6" />
                         <h2 className="text-4xl font-bold mb-2">Winner</h2>
                         <div className="text-6xl font-black text-purple-400 mb-4">{winner.name}</div>
                         <div className="text-3xl font-bold opacity-80">{winner.score} points</div>
                     </div>
                 )}
-                <button
-                    onClick={() => navigate('/')}
-                    className="px-8 py-4 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-xl transition-all"
-                >
-                    Back to Home
-                </button>
+
+                <div className="w-full max-w-2xl mb-12">
+                    <h3 className="text-2xl font-bold mb-4 text-slate-400">Final Standings</h3>
+                    <div className="bg-slate-800/50 rounded-2xl p-4 max-h-64 overflow-y-auto">
+                        {players.sort((a, b) => b.score - a.score).map((p, i) => (
+                            <div key={p.id} className="flex justify-between items-center p-3 border-b border-white/10 last:border-0">
+                                <div className="flex items-center gap-4">
+                                    <span className="font-bold text-slate-500 w-6">{i + 1}</span>
+                                    <span className="font-bold">{p.name}</span>
+                                </div>
+                                <span className="font-mono text-purple-400">{p.score}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex gap-6">
+                    <button
+                        onClick={() => navigate('/create')}
+                        className="px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-xl transition-all shadow-lg flex items-center gap-2"
+                    >
+                        Host Another
+                    </button>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="px-8 py-4 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-xl transition-all flex items-center gap-2"
+                    >
+                        Exit to Home
+                    </button>
+                </div>
             </div>
         );
     }

@@ -67,9 +67,13 @@ const PlayerGame = () => {
             setGameState('FEEDBACK');
         });
 
-        newSocket.on('game_over', () => {
+        newSocket.on('game_over', ({ leaderboard }) => {
             setGameState('FINISHED');
-            setTimeout(() => navigate('/results', { state: { score, isPlayer: true } }), 3000);
+            // Find my score from the official leaderboard
+            const myEntry = leaderboard?.find(p => p.id === newSocket.id);
+            const finalScore = myEntry ? myEntry.score : score;
+
+            setTimeout(() => navigate('/results', { state: { score: finalScore, isPlayer: true } }), 3000);
         });
 
         return () => newSocket.disconnect();

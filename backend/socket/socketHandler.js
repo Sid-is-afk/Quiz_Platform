@@ -133,6 +133,7 @@ const socketHandler = (io) => {
             const player = game.players.find(p => p.id === socket.id);
             if (player && isCorrect) {
                 player.score += 1000; // Simple scoring
+                console.log(`Player ${player.name} score updated to ${player.score}`);
             }
 
             // Emit result to player
@@ -164,7 +165,8 @@ const socketHandler = (io) => {
 
             if (game.currentQuestionIndex >= game.quizData.questions.length) {
                 game.gameState = 'FINISHED';
-                io.to(roomCode).emit('game_over');
+                const leaderboard = game.players.sort((a, b) => b.score - a.score);
+                io.to(roomCode).emit('game_over', { leaderboard });
             } else {
                 sendQuestion(roomCode, game);
             }
