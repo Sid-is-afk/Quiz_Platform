@@ -72,60 +72,6 @@ const socketHandler = (io) => {
             }, 1000);
         };
 
-        // Join Room
-        socket.on('join_room', ({ roomCode, playerName }) => {
-            const game = games[roomCode];
-            if (!game) {
-                socket.emit('error', { message: 'Room not found' });
-                return;
-            }
-
-            // Check for existing player (Reconnection Logic)
-            const existingPlayer = game.players.find(p => p.name === playerName);
-            if (existingPlayer) {
-                // Update socket ID
-                existingPlayer.id = socket.id;
-                socket.join(roomCode);
-
-                // Send current game state to reconnected player
-                socket.emit('player_joined', game.players); // Or a specific 'reconnected' event
-
-                // If game is in progress, send current question
-                if (game.gameState === 'QUESTION') {
-                    const question = game.quizData.questions[game.currentQuestionIndex];
-                    const formattedOptions = question.options.map((opt, index) => ({
-                        id: index,
-                        text: opt
-                    }));
-
-                    socket.emit('new_question', {
-                        question: {
-                            text: question.questionText,
-                            options: formattedOptions,
-                            timeLimit: question.timeLimit || game.quizData.timeLimitPerQuestion || 20
-                        },
-                        questionIndex: game.currentQuestionIndex,
-                        totalQuestions: game.quizData.questions.length
-                    });
-                }
-
-                console.log(`${playerName} reconnected to room ${roomCode}`);
-                return;
-            }
-
-            if (game.gameState !== 'LOBBY') {
-                socket.emit('error', { message: 'Game already started' });
-                return;
-            }
-
-            game.players.push({ id: socket.id, name: playerName, score: 0 });
-            socket.join(roomCode);
-
-            // Notify everyone in the room (including the new player)
-            io.to(roomCode).emit('player_joined', game.players);
-            console.log(`${playerName} joined room ${roomCode}`);
-        });
-
         // Helper to send question
         const sendQuestion = (roomCode, game) => {
             const question = game.quizData.questions[game.currentQuestionIndex];
@@ -151,6 +97,63 @@ const socketHandler = (io) => {
             // Start Server Side Timer
             startQuestionTimer(roomCode, timeLimit);
         };
+
+        // Join Room
+        socket.on('join_room', ({ roomCode, playerName }) => {
+            const game = games[roomCode];
+            if (!game) {
+                socket.emit('error', { message: 'Room not found' });
+                return;
+            }
+
+            // Check for existing player (Reconnection Logic)
+            const existingPlayer = game.players.find(p => p.name === playerName);
+            if (existingPlayer) {
+                // RECONNECT: Update their socket ID to the new one
+                console.log(`Player ${playerName} reconnected. Updating ID.`);
+                existingPlayer.id = socket.id;
+                existingPlayer.isOnline = true;
+                socket.join(roomCode);
+
+                // Send them the current state immediately
+                socket.emit('reconnect_success', {
+                    score: existingPlayer.score
+                });
+
+                // If game is in progress, send current question
+                if (game.gameState === 'QUESTION') {
+                    const question = game.quizData.questions[game.currentQuestionIndex];
+                    const formattedOptions = question.options.map((opt, index) => ({
+                        id: index,
+                        text: opt
+                    }));
+
+                    socket.emit('new_question', {
+                        question: {
+                            text: question.questionText,
+                            options: formattedOptions,
+                            timeLimit: question.timeLimit || game.quizData.timeLimitPerQuestion || 20
+                        },
+                        questionIndex: game.currentQuestionIndex,
+                        totalQuestions: game.quizData.questions.length
+                    });
+                }
+
+                return;
+            }
+
+            if (game.gameState !== 'LOBBY') {
+                socket.emit('error', { message: 'Game already started' });
+                return;
+            }
+
+            game.players.push({ id: socket.id, name: playerName, score: 0, isOnline: true });
+            socket.join(roomCode);
+
+            // Notify everyone in the room (including the new player)
+            io.to(roomCode).emit('player_joined', game.players);
+            console.log(`${playerName} joined room ${roomCode}`);
+        });
 
         // Start Game
         socket.on('start_game', (roomCode) => {
@@ -250,22 +253,9 @@ const socketHandler = (io) => {
             for (const roomCode in games) {
                 const game = games[roomCode];
 
-                // If host disconnects, maybe end game? For now just log it.
-                if (game.hostSocketId === socket.id) {
+                if (game && game.hostSocketId === socket.id) {
                     console.log(`Host disconnected from room ${roomCode}`);
-                    // Optional: io.to(roomCode).emit('host_disconnected');
                 }
-
-                // We do NOT remove the player immediately on disconnect to allow reconnection
-                // const playerIndex = game.players.findIndex(p => p.id === socket.id);
-                // if (playerIndex !== -1) {
-                //     game.players.splice(playerIndex, 1);
-                //     io.to(roomCode).emit('player_left', game.players);
-                //     break;
-                // }
-
-                // Only clean up if empty for a long time? 
-                // For now, let's just keep the game state.
             }
         });
     });
