@@ -44,6 +44,34 @@ const socketHandler = (io) => {
             }
         });
 
+        // Helper to handle question end
+        const handleQuestionEnd = (roomCode) => {
+            const game = games[roomCode];
+            if (!game) return;
+
+            clearInterval(game.timer);
+            game.gameState = 'LEADERBOARD'; // Or FEEDBACK if you want to show correct answer first
+            io.to(roomCode).emit('all_answered'); // Trigger frontend transition
+        };
+
+        // Helper to start timer
+        const startQuestionTimer = (roomCode, duration) => {
+            const game = games[roomCode];
+            if (!game) return;
+
+            if (game.timer) clearInterval(game.timer);
+
+            let timeLeft = duration;
+            game.timer = setInterval(() => {
+                timeLeft--;
+                io.to(roomCode).emit('timer_update', timeLeft);
+
+                if (timeLeft <= 0) {
+                    handleQuestionEnd(roomCode);
+                }
+            }, 1000);
+        };
+
         // Join Room
         socket.on('join_room', ({ roomCode, playerName }) => {
             const game = games[roomCode];
@@ -52,14 +80,41 @@ const socketHandler = (io) => {
                 return;
             }
 
-            if (game.gameState !== 'LOBBY') {
-                socket.emit('error', { message: 'Game already started' });
+            // Check for existing player (Reconnection Logic)
+            const existingPlayer = game.players.find(p => p.name === playerName);
+            if (existingPlayer) {
+                // Update socket ID
+                existingPlayer.id = socket.id;
+                socket.join(roomCode);
+
+                // Send current game state to reconnected player
+                socket.emit('player_joined', game.players); // Or a specific 'reconnected' event
+
+                // If game is in progress, send current question
+                if (game.gameState === 'QUESTION') {
+                    const question = game.quizData.questions[game.currentQuestionIndex];
+                    const formattedOptions = question.options.map((opt, index) => ({
+                        id: index,
+                        text: opt
+                    }));
+
+                    socket.emit('new_question', {
+                        question: {
+                            text: question.questionText,
+                            options: formattedOptions,
+                            timeLimit: question.timeLimit || game.quizData.timeLimitPerQuestion || 20
+                        },
+                        questionIndex: game.currentQuestionIndex,
+                        totalQuestions: game.quizData.questions.length
+                    });
+                }
+
+                console.log(`${playerName} reconnected to room ${roomCode}`);
                 return;
             }
 
-            // Check for duplicate names
-            if (game.players.some(p => p.name === playerName)) {
-                socket.emit('error', { message: 'Name already taken' });
+            if (game.gameState !== 'LOBBY') {
+                socket.emit('error', { message: 'Game already started' });
                 return;
             }
 
@@ -81,15 +136,20 @@ const socketHandler = (io) => {
                 text: opt
             }));
 
+            const timeLimit = question.timeLimit || game.quizData.timeLimitPerQuestion || 20;
+
             io.to(roomCode).emit('new_question', {
                 question: {
                     text: question.questionText,
                     options: formattedOptions,
-                    timeLimit: question.timeLimit || game.quizData.timeLimitPerQuestion || 20
+                    timeLimit: timeLimit
                 },
                 questionIndex: game.currentQuestionIndex,
                 totalQuestions: game.quizData.questions.length
             });
+
+            // Start Server Side Timer
+            startQuestionTimer(roomCode, timeLimit);
         };
 
         // Start Game
@@ -111,44 +171,55 @@ const socketHandler = (io) => {
 
         // Submit Answer
         socket.on('submit_answer', ({ roomCode, answer, questionIndex }) => {
-            const game = games[roomCode];
-            if (!game) return;
+            try {
+                const game = games[roomCode];
+                if (!game) return;
 
-            // Initialize answers object for this question if not exists
-            if (!game.answers[questionIndex]) {
-                game.answers[questionIndex] = {};
-            }
+                // 1. Find player
+                const player = game.players.find(p => p.id === socket.id);
+                if (!player) return;
 
-            // Prevent multiple answers from same player for same question
-            if (game.answers[questionIndex][socket.id] !== undefined) return;
+                // 2. Initialize answers object for this question if not exists
+                if (!game.answers[questionIndex]) {
+                    game.answers[questionIndex] = {};
+                }
 
-            game.answers[questionIndex][socket.id] = answer;
+                // Prevent multiple answers from same player for same question
+                if (game.answers[questionIndex][socket.id] !== undefined) return;
 
-            // Check correctness
-            const question = game.quizData.questions[questionIndex];
-            // answer is the index sent from frontend
-            const isCorrect = answer === question.correctOptionIndex;
+                // 3. Process Answer
+                game.answers[questionIndex][socket.id] = answer;
 
-            // Update score
-            const player = game.players.find(p => p.id === socket.id);
-            if (player && isCorrect) {
-                player.score += 1000; // Simple scoring
-                console.log(`Player ${player.name} score updated to ${player.score}`);
-            }
+                // 4. Acknowledgment
+                socket.emit('answer_received');
 
-            // Emit result to player
-            socket.emit('answer_result', {
-                isCorrect,
-                score: player ? player.score : 0
-            });
+                // Check correctness
+                const question = game.quizData.questions[questionIndex];
+                const isCorrect = answer === question.correctOptionIndex;
 
-            // Notify room of updated scores
-            io.to(roomCode).emit('update_players', game.players);
+                // Update score
+                if (isCorrect) {
+                    player.score += 1000; // Simple scoring
+                    console.log(`Player ${player.name} score updated to ${player.score}`);
+                }
 
-            // Check if all players answered
-            const answeredCount = Object.keys(game.answers[questionIndex]).length;
-            if (answeredCount === game.players.length) {
-                io.to(roomCode).emit('all_answered');
+                // Emit result to player
+                socket.emit('answer_result', {
+                    isCorrect,
+                    score: player.score,
+                    correctOption: question.correctOptionIndex
+                });
+
+                // Notify room of updated scores
+                io.to(roomCode).emit('update_players', game.players);
+
+                // 5. Check if all players answered
+                const answeredCount = Object.keys(game.answers[questionIndex]).length;
+                if (answeredCount === game.players.length) {
+                    handleQuestionEnd(roomCode);
+                }
+            } catch (error) {
+                console.error("Submit Answer Error:", error);
             }
         });
 
@@ -165,6 +236,7 @@ const socketHandler = (io) => {
 
             if (game.currentQuestionIndex >= game.quizData.questions.length) {
                 game.gameState = 'FINISHED';
+                if (game.timer) clearInterval(game.timer); // Clear timer if exists
                 const leaderboard = game.players.sort((a, b) => b.score - a.score);
                 io.to(roomCode).emit('game_over', { leaderboard });
             } else {
@@ -184,23 +256,16 @@ const socketHandler = (io) => {
                     // Optional: io.to(roomCode).emit('host_disconnected');
                 }
 
-                const playerIndex = game.players.findIndex(p => p.id === socket.id);
-                if (playerIndex !== -1) {
-                    game.players.splice(playerIndex, 1);
-                    io.to(roomCode).emit('player_left', game.players);
+                // We do NOT remove the player immediately on disconnect to allow reconnection
+                // const playerIndex = game.players.findIndex(p => p.id === socket.id);
+                // if (playerIndex !== -1) {
+                //     game.players.splice(playerIndex, 1);
+                //     io.to(roomCode).emit('player_left', game.players);
+                //     break;
+                // }
 
-                    // If room is empty and host is gone, delete it
-                    if (game.players.length === 0 && game.hostSocketId === socket.id) { // Or just check if empty?
-                        // Ideally keep room for a bit if host reconnects, but for prototype delete if empty
-                    }
-
-                    // Clean up empty rooms
-                    if (game.players.length === 0 && !io.sockets.adapter.rooms.get(roomCode)) {
-                        delete games[roomCode];
-                        console.log(`Room ${roomCode} deleted`);
-                    }
-                    break;
-                }
+                // Only clean up if empty for a long time? 
+                // For now, let's just keep the game state.
             }
         });
     });

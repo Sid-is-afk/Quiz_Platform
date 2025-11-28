@@ -95,18 +95,34 @@ const PlayerGame = () => {
             }), 3000);
         });
 
+        newSocket.on('timer_update', (time) => {
+            setTimeLeft(time);
+        });
+
+        newSocket.on('answer_received', () => {
+            // Optional: Show a "Waiting for others..." toast or state
+            console.log('Answer received by server');
+        });
+
+        newSocket.on('all_answered', () => {
+            // Force transition if not already happened via answer_result
+            // But usually answer_result comes first. 
+            // If we want to show leaderboard after all answered:
+            setGameState('FEEDBACK'); // Or directly to LEADERBOARD if you have that state in PlayerGame
+        });
+
         return () => newSocket.disconnect();
     }, [gameCode, navigate, score, userAnswers, playerName]);
 
-    // Timer logic
-    useEffect(() => {
-        if (gameState === 'QUESTION' && timeLeft > 0) {
-            const timer = setInterval(() => {
-                setTimeLeft((prev) => prev - 1);
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [gameState, timeLeft]);
+    // Timer logic - REMOVED (Handled by Server)
+    // useEffect(() => {
+    //     if (gameState === 'QUESTION' && timeLeft > 0) {
+    //         const timer = setInterval(() => {
+    //             setTimeLeft((prev) => prev - 1);
+    //         }, 1000);
+    //         return () => clearInterval(timer);
+    //     }
+    // }, [gameState, timeLeft]);
 
     const handleJoin = (e) => {
         e.preventDefault();
