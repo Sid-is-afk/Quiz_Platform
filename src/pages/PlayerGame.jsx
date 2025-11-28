@@ -25,6 +25,8 @@ const PlayerGame = () => {
     const [isCorrect, setIsCorrect] = useState(false);
     const [score, setScore] = useState(0);
 
+    const [userAnswers, setUserAnswers] = useState([]);
+
     useEffect(() => {
         if (!gameCode) {
             navigate('/');
@@ -65,6 +67,16 @@ const PlayerGame = () => {
             setIsCorrect(result.isCorrect);
             setScore(result.score);
             setGameState('FEEDBACK');
+
+            // Update the last answer with correctness
+            setUserAnswers(prev => {
+                const newAnswers = [...prev];
+                if (newAnswers.length > 0) {
+                    newAnswers[newAnswers.length - 1].isCorrect = result.isCorrect;
+                    newAnswers[newAnswers.length - 1].correctOption = result.correctOption; // Assuming backend sends this, if not we might need to infer or just show correct/incorrect status
+                }
+                return newAnswers;
+            });
         });
 
         newSocket.on('game_over', ({ leaderboard }) => {
@@ -73,11 +85,18 @@ const PlayerGame = () => {
             const myEntry = leaderboard?.find(p => p.id === newSocket.id);
             const finalScore = myEntry ? myEntry.score : score;
 
-            setTimeout(() => navigate('/results', { state: { score: finalScore, isPlayer: true } }), 3000);
+            setTimeout(() => navigate('/results', {
+                state: {
+                    score: finalScore,
+                    isPlayer: true,
+                    userAnswers: userAnswers,
+                    playerName: playerName
+                }
+            }), 3000);
         });
 
         return () => newSocket.disconnect();
-    }, [gameCode, navigate]);
+    }, [gameCode, navigate, score, userAnswers, playerName]);
 
     // Timer logic
     useEffect(() => {
@@ -100,6 +119,16 @@ const PlayerGame = () => {
         if (gameState !== 'QUESTION' || selectedOption !== null) return;
 
         setSelectedOption(optionId);
+
+        // Track the answer locally
+        const selectedOpt = currentQuestion.options.find(o => o.id === optionId);
+        setUserAnswers(prev => [...prev, {
+            questionText: currentQuestion.text,
+            selectedOptionText: selectedOpt?.text,
+            isCorrect: false, // Will be updated by answer_result
+            questionIndex: currentQuestionIndex
+        }]);
+
         socket.emit('submit_answer', {
             roomCode: gameCode,
             answer: optionId,
