@@ -79,9 +79,12 @@ const PlayerGame = () => {
             console.log('Game Over event received:', data);
             setGameState('FINISHED');
 
-            // Find my score from leaderboard to avoid stale state issues
-            const myScoreEntry = data.leaderboard.find(p => p.name === playerName);
+            // Find my score from leaderboard using socket.id (best) or name (fallback)
+            const myScoreEntry = data.leaderboard.find(p => p.id === newSocket.id) ||
+                data.leaderboard.find(p => p.name === playerName);
+
             const finalScore = myScoreEntry ? myScoreEntry.score : 0;
+            console.log("Server says my score is:", finalScore);
 
             navigate('/results', {
                 state: {

@@ -203,7 +203,7 @@ const socketHandler = (io) => {
                 // Update score
                 if (isCorrect) {
                     player.score += 1000; // Simple scoring
-                    console.log(`Player ${player.name} score updated to ${player.score}`);
+                    console.log(`Player ${player.name} New Score: ${player.score}`);
                 }
 
                 // Emit result to player
