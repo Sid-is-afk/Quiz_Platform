@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Sparkles, Clock, HelpCircle, Save, RotateCcw, Play, Loader2, Upload, FileText, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Sparkles, Clock, HelpCircle, Save, RotateCcw, Play, Loader2, Upload, FileText, Image as ImageIcon, Check } from 'lucide-react';
 
 import { API_URL } from '../config';
 
@@ -103,19 +103,21 @@ const CreateQuiz = () => {
         }
     };
 
+    const difficulties = ['Easy', 'Medium', 'Hard'];
+
     return (
-        <div className="min-h-screen bg-slate-900 text-white p-6">
+        <div className="min-h-screen p-6 relative z-10">
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-8">
                     <button
                         onClick={() => navigate('/')}
-                        className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                        className="p-3 hover:bg-white/10 rounded-full transition-colors text-cyan-400"
                     >
                         <ArrowLeft className="w-6 h-6" />
                     </button>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                        Create New Quiz
+                    <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 tracking-wide drop-shadow-[0_0_10px_rgba(34,211,238,0.3)]">
+                        CREATE NEW QUIZ
                     </h1>
                 </div>
 
@@ -126,139 +128,141 @@ const CreateQuiz = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, x: -20 }}
-                            className="bg-slate-800/50 rounded-2xl p-8 border border-white/10 backdrop-blur-sm"
+                            className="glass-card p-8 md:p-10"
                         >
                             {/* Mode Toggle */}
-                            <div className="flex p-1 bg-slate-900/50 rounded-xl mb-8 w-fit">
+                            <div className="flex p-1 bg-black/40 rounded-xl mb-8 w-fit border border-white/5">
                                 <button
                                     onClick={() => setMode('topic')}
-                                    className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'topic'
-                                        ? 'bg-slate-700 text-white shadow-lg'
-                                        : 'text-slate-400 hover:text-white'
+                                    className={`px-6 py-3 rounded-lg text-sm font-bold tracking-wide transition-all ${mode === 'topic'
+                                        ? 'bg-cyan-600 text-white shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+                                        : 'text-gray-400 hover:text-white'
                                         }`}
                                 >
-                                    By Topic
+                                    BY TOPIC
                                 </button>
                                 <button
                                     onClick={() => setMode('file')}
-                                    className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${mode === 'file'
-                                        ? 'bg-slate-700 text-white shadow-lg'
-                                        : 'text-slate-400 hover:text-white'
+                                    className={`px-6 py-3 rounded-lg text-sm font-bold tracking-wide transition-all ${mode === 'file'
+                                        ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)]'
+                                        : 'text-gray-400 hover:text-white'
                                         }`}
                                 >
-                                    Upload File
+                                    UPLOAD FILE
                                 </button>
                             </div>
 
-                            <form onSubmit={handleGenerate} className="space-y-6">
+                            <form onSubmit={handleGenerate} className="space-y-8">
                                 {mode === 'topic' ? (
                                     /* Topic Input */
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-300">Quiz Topic</label>
-                                        <div className="relative">
-                                            <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
+                                    <div className="space-y-3">
+                                        <label className="text-sm font-bold text-cyan-400 tracking-wider uppercase">Quiz Topic</label>
+                                        <div className="relative group">
+                                            <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400 group-focus-within:text-cyan-400 transition-colors" />
                                             <input
                                                 type="text"
                                                 value={formData.topic}
                                                 onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                                                placeholder="e.g., Solar System, 90s Music, JavaScript Basics"
-                                                className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                                placeholder="e.g., QUANTUM PHYSICS, 80s SYNTHWAVE"
+                                                className="glass-input w-full py-4 pl-12 pr-4 rounded-xl"
                                                 required={mode === 'topic'}
                                             />
                                         </div>
                                     </div>
                                 ) : (
                                     /* File Upload */
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-300">Upload Content (PDF or Image)</label>
-                                        <div className="relative border-2 border-dashed border-slate-700 rounded-xl p-8 text-center hover:border-purple-500/50 transition-colors group">
+                                    <div className="space-y-3">
+                                        <label className="text-sm font-bold text-purple-400 tracking-wider uppercase">Upload Content</label>
+                                        <div className="relative border-2 border-dashed border-gray-700 rounded-xl p-10 text-center hover:border-purple-500 hover:bg-purple-500/5 transition-all group cursor-pointer">
                                             <input
                                                 type="file"
                                                 accept=".pdf,image/*"
                                                 onChange={handleFileChange}
-                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                                 required={mode === 'file'}
                                             />
-                                            <div className="flex flex-col items-center gap-3">
-                                                <div className="p-4 bg-slate-800 rounded-full group-hover:bg-slate-700 transition-colors">
+                                            <div className="flex flex-col items-center gap-4">
+                                                <div className="p-5 bg-gray-800/50 rounded-full group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(147,51,234,0.2)]">
                                                     {file ? (
-                                                        file.type.includes('pdf') ? <FileText className="w-8 h-8 text-blue-400" /> : <ImageIcon className="w-8 h-8 text-green-400" />
+                                                        file.type.includes('pdf') ? <FileText className="w-10 h-10 text-cyan-400" /> : <ImageIcon className="w-10 h-10 text-purple-400" />
                                                     ) : (
-                                                        <Upload className="w-8 h-8 text-slate-400" />
+                                                        <Upload className="w-10 h-10 text-gray-400 group-hover:text-purple-400 transition-colors" />
                                                     )}
                                                 </div>
-                                                <div className="text-slate-400">
+                                                <div className="text-gray-400">
                                                     {file ? (
-                                                        <span className="text-white font-medium">{file.name}</span>
+                                                        <span className="text-white font-bold text-lg">{file.name}</span>
                                                     ) : (
                                                         <>
-                                                            <span className="text-purple-400 font-medium">Click to upload</span> or drag and drop
-                                                            <p className="text-xs mt-1 text-slate-500">PDFs or Images supported</p>
+                                                            <span className="text-purple-400 font-bold">CLICK TO UPLOAD</span> OR DRAG AND DROP
+                                                            <p className="text-xs mt-2 text-gray-500 uppercase tracking-wide">PDF OR IMAGES SUPPORTED</p>
                                                         </>
                                                     )}
                                                 </div>
                                             </div>
                                         </div>
-                                        <p className="text-xs text-amber-400/80 flex items-center gap-2 mt-2">
-                                            <HelpCircle className="w-3 h-3" />
-                                            Please ensure the uploaded document contains questions only
-                                        </p>
                                     </div>
                                 )}
 
-                                <div className="grid md:grid-cols-3 gap-6">
-                                    {/* Difficulty - Only for Topic Mode */
+                                <div className="grid md:grid-cols-2 gap-8">
+                                    {/* Difficulty - Custom Chips */
                                         mode === 'topic' && (
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-slate-300">Difficulty</label>
-                                                <select
-                                                    value={formData.difficulty}
-                                                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
-                                                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl p-4 outline-none focus:ring-2 focus:ring-purple-500"
-                                                >
-                                                    <option value="Easy">Easy</option>
-                                                    <option value="Medium">Medium</option>
-                                                    <option value="Hard">Hard</option>
-                                                </select>
+                                            <div className="space-y-3">
+                                                <label className="text-sm font-bold text-cyan-400 tracking-wider uppercase">Difficulty</label>
+                                                <div className="flex gap-3">
+                                                    {difficulties.map((diff) => (
+                                                        <button
+                                                            key={diff}
+                                                            type="button"
+                                                            onClick={() => setFormData({ ...formData, difficulty: diff })}
+                                                            className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all border ${formData.difficulty === diff
+                                                                ? 'bg-cyan-600/20 border-cyan-500 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                                                                : 'bg-black/20 border-white/10 text-gray-500 hover:border-white/30'
+                                                                }`}
+                                                        >
+                                                            {diff.toUpperCase()}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
                                         )
                                     }
 
-                                    {/* Question Count */}
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-300">Questions: {formData.amount}</label>
-                                        <div className="h-[58px] flex items-center bg-slate-900/50 border border-white/10 rounded-xl px-4">
-                                            <input
-                                                type="range"
-                                                min="3"
-                                                max="10"
-                                                value={formData.amount}
-                                                onChange={(e) => setFormData({ ...formData, amount: parseInt(e.target.value) })}
-                                                className="w-full accent-purple-500"
-                                            />
+                                    {/* Question Count */
+                                        <div className="space-y-3">
+                                            <label className="text-sm font-bold text-cyan-400 tracking-wider uppercase">Questions: <span className="text-white">{formData.amount}</span></label>
+                                            <div className="h-[52px] flex items-center bg-black/20 border border-white/10 rounded-xl px-4">
+                                                <input
+                                                    type="range"
+                                                    min="3"
+                                                    max="10"
+                                                    value={formData.amount}
+                                                    onChange={(e) => setFormData({ ...formData, amount: parseInt(e.target.value) })}
+                                                    className="w-full accent-cyan-500 cursor-pointer"
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
+                                    }
+                                </div>
 
-                                    {/* Time Limit */}
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-300">Time per questions in seconds</label>
-                                        <div className="relative">
-                                            <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
-                                            <input
-                                                type="number"
-                                                min="5"
-                                                max="600"
-                                                value={formData.timeLimit}
-                                                onChange={(e) => setFormData({ ...formData, timeLimit: parseInt(e.target.value) || 0 })}
-                                                placeholder="Seconds"
-                                                className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-purple-500"
-                                            />
-                                        </div>
+                                {/* Time Limit */}
+                                <div className="space-y-3">
+                                    <label className="text-sm font-bold text-cyan-400 tracking-wider uppercase">Time per question (seconds)</label>
+                                    <div className="relative group">
+                                        <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400 group-focus-within:text-cyan-400 transition-colors" />
+                                        <input
+                                            type="number"
+                                            min="5"
+                                            max="600"
+                                            value={formData.timeLimit}
+                                            onChange={(e) => setFormData({ ...formData, timeLimit: parseInt(e.target.value) || 0 })}
+                                            className="glass-input w-full py-4 pl-12 pr-4 rounded-xl"
+                                        />
                                     </div>
                                 </div>
 
                                 {error && (
-                                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+                                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-medium">
                                         {error}
                                     </div>
                                 )}
@@ -266,17 +270,17 @@ const CreateQuiz = () => {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/20 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="btn-primary w-full flex items-center justify-center gap-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isLoading ? (
                                         <>
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                            Generating Magic...
+                                            <Loader2 className="w-6 h-6 animate-spin" />
+                                            INITIALIZING AI CORE...
                                         </>
                                     ) : (
                                         <>
-                                            <Sparkles className="w-5 h-5" />
-                                            Generate Quiz with AI
+                                            <Sparkles className="w-6 h-6" />
+                                            GENERATE QUIZ
                                         </>
                                     )}
                                 </button>
@@ -291,28 +295,28 @@ const CreateQuiz = () => {
                             className="space-y-6"
                         >
                             {/* Preview Header */}
-                            <div className="bg-slate-800/50 rounded-2xl p-6 border border-white/10 backdrop-blur-sm flex justify-between items-center">
+                            <div className="glass-card p-6 flex flex-col md:flex-row justify-between items-center gap-4">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-white">{quizData?.title}</h2>
-                                    <p className="text-slate-400 mt-1">
-                                        {mode === 'topic' ? formData.topic : 'Generated from File'} • {formData.difficulty} • {quizData?.questions?.length} Questions
+                                    <h2 className="text-2xl font-bold text-white tracking-wide">{quizData?.title}</h2>
+                                    <p className="text-cyan-400 mt-1 font-mono text-sm">
+                                        {mode === 'topic' ? formData.topic.toUpperCase() : 'UPLOADED CONTENT'} • {formData.difficulty.toUpperCase()} • {quizData?.questions?.length} Qs
                                     </p>
                                 </div>
-                                <div className="flex gap-3">
+                                <div className="flex gap-4 w-full md:w-auto">
                                     <button
                                         onClick={() => setStage('config')}
-                                        className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                        className="flex-1 md:flex-none px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 text-gray-300"
                                     >
                                         <RotateCcw className="w-4 h-4" />
-                                        Regenerate
+                                        RETRY
                                     </button>
                                     <button
                                         onClick={handleSaveAndHost}
                                         disabled={isLoading}
-                                        className="px-6 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold transition-colors shadow-lg shadow-green-500/20 flex items-center gap-2"
+                                        className="flex-1 md:flex-none btn-secondary flex items-center justify-center gap-2 text-sm"
                                     >
                                         {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-                                        Publish & Host
+                                        LAUNCH SYSTEM
                                     </button>
                                 </div>
                             </div>
@@ -325,14 +329,14 @@ const CreateQuiz = () => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: idx * 0.1 }}
-                                        className="bg-slate-800/30 rounded-xl p-6 border border-white/5"
+                                        className="bg-white/5 rounded-xl p-6 border border-white/5 hover:border-cyan-500/30 transition-colors"
                                     >
                                         <div className="flex justify-between items-start mb-4">
                                             <h3 className="text-lg font-medium text-white">
-                                                <span className="text-purple-400 mr-2">Q{idx + 1}.</span>
+                                                <span className="text-cyan-400 mr-3 font-bold">0{idx + 1}</span>
                                                 {q.questionText}
                                             </h3>
-                                            <span className="text-xs font-mono bg-slate-700 px-2 py-1 rounded text-slate-300">
+                                            <span className="text-xs font-mono bg-cyan-900/30 text-cyan-400 px-3 py-1 rounded border border-cyan-500/30">
                                                 {q.timeLimit || formData.timeLimit}s
                                             </span>
                                         </div>
@@ -341,12 +345,13 @@ const CreateQuiz = () => {
                                             {q.options.map((opt, optIdx) => (
                                                 <div
                                                     key={optIdx}
-                                                    className={`p-3 rounded-lg text-sm border ${opt === q.correctAnswer
-                                                        ? 'bg-green-500/10 border-green-500/30 text-green-300'
-                                                        : 'bg-slate-900/50 border-white/5 text-slate-400'
+                                                    className={`p-4 rounded-lg text-sm border font-medium flex items-center justify-between ${opt === q.correctAnswer
+                                                        ? 'bg-green-500/20 border-green-500/50 text-green-300 shadow-[0_0_10px_rgba(34,197,94,0.2)]'
+                                                        : 'bg-black/20 border-white/5 text-gray-400'
                                                         }`}
                                                 >
                                                     {opt}
+                                                    {opt === q.correctAnswer && <Check className="w-4 h-4 text-green-400" />}
                                                 </div>
                                             ))}
                                         </div>

@@ -6,7 +6,7 @@ const Layout = () => {
     const location = useLocation();
 
     return (
-        <div className="min-h-screen bg-background font-sans text-gray-800 overflow-hidden">
+        <div className="min-h-screen overflow-hidden">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={location.pathname}
