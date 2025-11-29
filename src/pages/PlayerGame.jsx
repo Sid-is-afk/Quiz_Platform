@@ -76,7 +76,21 @@ const PlayerGame = () => {
         });
 
         newSocket.on('game_over', (data) => {
+            console.log('Game Over event received:', data);
             setGameState('FINISHED');
+
+            // Find my score from leaderboard to avoid stale state issues
+            const myScoreEntry = data.leaderboard.find(p => p.name === playerName);
+            const finalScore = myScoreEntry ? myScoreEntry.score : 0;
+
+            navigate('/results', {
+                state: {
+                    leaderboard: data.leaderboard,
+                    score: finalScore,
+                    quizId: data.quizId,
+                    playerName: playerName
+                }
+            });
         });
 
         return () => newSocket.disconnect();

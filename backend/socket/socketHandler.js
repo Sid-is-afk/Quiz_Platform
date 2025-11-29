@@ -241,7 +241,10 @@ const socketHandler = (io) => {
                 game.gameState = 'FINISHED';
                 if (game.timer) clearInterval(game.timer); // Clear timer if exists
                 const leaderboard = game.players.sort((a, b) => b.score - a.score);
-                io.to(roomCode).emit('game_over', { leaderboard });
+                io.to(roomCode).emit('game_over', {
+                    leaderboard,
+                    quizId: game.quizId
+                });
             } else {
                 sendQuestion(roomCode, game);
             }
