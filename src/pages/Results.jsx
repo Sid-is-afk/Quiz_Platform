@@ -54,42 +54,60 @@ const Results = () => {
         }
     };
 
+    const userRank = myRank;
+
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 gap-6 relative overflow-hidden">
-            <Confetti width={windowSize.width} height={windowSize.height} numberOfPieces={300} recycle={false} />
+        <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-6 text-white overflow-y-auto relative">
 
-            <motion.div
-                initial={{ opacity: 0, y: -50 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center z-10"
-            >
-                <h1 className="text-4xl md:text-7xl font-black text-center mb-2 tracking-wide leading-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]">
-                    MISSION COMPLETE
-                </h1>
-                <p className="text-xl text-gray-300 tracking-widest uppercase">Performance Report Generated</p>
-            </motion.div>
+            {/* Background Gradient Effect */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-purple-900/40 via-gray-950 to-gray-950 pointer-events-none" />
 
-            <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                className="glass-card p-8 md:p-12 mt-4 w-full max-w-sm text-center z-10 relative group"
-            >
-                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-                <div className="relative">
-                    <div className="text-cyan-400 font-bold text-xl mb-2 tracking-widest uppercase">Total Score</div>
-                    <div className="text-8xl font-black text-white mb-4 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">{score}</div>
+            {/* Content Container (z-10 to sit above background) */}
+            <div className="relative z-10 w-full max-w-md flex flex-col items-center gap-8 py-8">
 
-                    {myRank > 0 && (
-                        <div className="inline-flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
-                            <Trophy size={16} className="text-yellow-400" />
-                            <span className="text-white font-bold">RANK #{myRank}</span>
-                        </div>
-                    )}
+                {/* 1. TITLE SECTION */}
+                <div className="text-center space-y-2">
+                    <h2 className="text-cyan-400 font-bold tracking-widest text-sm uppercase">Performance Report</h2>
+                    <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 leading-tight drop-shadow-lg">
+                        MISSION<br />COMPLETE
+                    </h1>
                 </div>
-            </motion.div>
 
-            {/* Hidden Report Card for Screenshot */}
+                {/* 2. SCORE CARD (Glassmorphism) */}
+                <div className="w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 flex flex-col items-center shadow-[0_0_30px_rgba(139,92,246,0.3)]">
+                    <span className="text-gray-400 font-medium tracking-wider text-sm mb-2">TOTAL SCORE</span>
+
+                    {/* Giant Score Number */}
+                    <div className="text-7xl font-black text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)] mb-4">
+                        {score}
+                    </div>
+
+                    {/* Rank Badge */}
+                    <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold px-6 py-2 rounded-full shadow-lg flex items-center gap-2">
+                        🏆 Rank #{userRank || '-'}
+                    </div>
+                </div>
+
+                {/* 3. ACTION BUTTONS */}
+                <div className="w-full flex flex-col gap-4 mt-2">
+                    <button
+                        onClick={handleSaveResult}
+                        className="w-full py-4 rounded-xl font-bold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:scale-105 transition-transform shadow-lg"
+                    >
+                        📥 Download Report
+                    </button>
+
+                    <button
+                        onClick={() => navigate('/')}
+                        className="w-full py-4 rounded-xl font-bold text-gray-300 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-all"
+                    >
+                        🏠 Return Home
+                    </button>
+                </div>
+
+            </div>
+
+            {/* Hidden Report Card for Screenshot - Kept for functionality */}
             <div id="quiz-report-card" className="fixed top-0 left-0 -z-50 bg-gray-950 p-12 w-[800px] text-white border-4 border-cyan-500/30">
                 <div className="text-center mb-10 border-b border-white/10 pb-8">
                     <h1 className="text-5xl font-black text-cyan-400 mb-4 tracking-wider">QUIZ REPORT</h1>
@@ -120,26 +138,6 @@ const Results = () => {
                     GENERATED BY AI QUIZ PLATFORM
                 </div>
             </div>
-
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1 }}
-                className="flex flex-col md:flex-row gap-6 z-10"
-            >
-                <button
-                    onClick={() => navigate('/')}
-                    className="btn-secondary flex items-center justify-center gap-3"
-                >
-                    <Home size={20} /> RETURN HOME
-                </button>
-                <button
-                    onClick={handleSaveResult}
-                    className="btn-primary flex items-center justify-center gap-3"
-                >
-                    <Download size={20} /> SAVE REPORT
-                </button>
-            </motion.div>
         </div>
     );
 };
