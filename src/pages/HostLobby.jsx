@@ -299,12 +299,12 @@ const HostLobby = () => {
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: index * 0.1 }}
                                     className={`flex items-center p-6 rounded-2xl border backdrop-blur-md transition-all ${index === 0
-                                            ? 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-500/50 shadow-[0_0_30px_rgba(234,179,8,0.2)] scale-105 z-10'
-                                            : index === 1
-                                                ? 'bg-gradient-to-r from-gray-400/20 to-slate-400/20 border-gray-400/50'
-                                                : index === 2
-                                                    ? 'bg-gradient-to-r from-orange-700/20 to-amber-800/20 border-orange-700/50'
-                                                    : 'bg-white/5 border-white/5'
+                                        ? 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-yellow-500/50 shadow-[0_0_30px_rgba(234,179,8,0.2)] scale-105 z-10'
+                                        : index === 1
+                                            ? 'bg-gradient-to-r from-gray-400/20 to-slate-400/20 border-gray-400/50'
+                                            : index === 2
+                                                ? 'bg-gradient-to-r from-orange-700/20 to-amber-800/20 border-orange-700/50'
+                                                : 'bg-white/5 border-white/5'
                                         }`}
                                 >
                                     <div className={`w-16 flex justify-center text-3xl font-black ${index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-orange-400' : 'text-gray-600'
@@ -330,50 +330,46 @@ const HostLobby = () => {
     }
 
     if (gameState === 'game_over' || gameState === 'GAME_OVER') {
+        const leaderboard = [...players].sort((a, b) => b.score - a.score);
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center relative z-10">
-                <motion.div
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="glass-card p-12 max-w-4xl w-full flex flex-col items-center"
-                >
-                    <Trophy className="w-32 h-32 text-yellow-400 mb-8 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] animate-bounce" />
-                    <h1 className="text-6xl font-black mb-12 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 drop-shadow-lg">
-                        GAME COMPLETED
-                    </h1>
+            <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-8 text-white">
+                <h1 className="text-5xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    SESSION COMPLETE
+                </h1>
 
-                    <div className="w-full max-w-2xl mb-12 bg-black/20 rounded-2xl overflow-hidden border border-white/10">
-                        <div className="p-4 bg-white/5 border-b border-white/10 font-bold text-gray-400 tracking-wider uppercase">Final Standings</div>
-                        <div className="max-h-80 overflow-y-auto custom-scrollbar">
-                            {players.sort((a, b) => b.score - a.score).map((p, i) => (
-                                <div key={p.id} className="flex justify-between items-center p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
-                                    <div className="flex items-center gap-6">
-                                        <span className={`font-black text-xl w-8 ${i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-orange-500' : 'text-gray-600'
-                                            }`}>{i + 1}</span>
-                                        <span className="font-bold text-lg text-white">{p.name}</span>
-                                    </div>
-                                    <span className="font-mono text-xl text-cyan-400 font-bold">{p.score}</span>
+                {/* Leaderboard Container - Glass Effect */}
+                <div className="w-full max-w-4xl bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8 mb-8 shadow-2xl">
+                    <h2 className="text-2xl font-semibold mb-6 text-center text-gray-200">Final Leaderboard</h2>
+
+                    {/* Render the Leaderboard List */}
+                    <div className="space-y-3">
+                        {leaderboard.map((player, index) => (
+                            <div key={index} className="flex justify-between items-center p-4 bg-white/5 rounded-lg border border-white/5">
+                                <div className="flex items-center gap-4">
+                                    <span className={`text-xl font-bold ${index === 0 ? 'text-yellow-400' : 'text-gray-400'}`}>#{index + 1}</span>
+                                    <span className="text-lg">{player.name}</span>
                                 </div>
-                            ))}
-                        </div>
+                                <span className="text-cyan-400 font-mono text-xl">{player.score} pts</span>
+                            </div>
+                        ))}
                     </div>
+                </div>
 
-                    <div className="flex flex-col md:flex-row gap-6 w-full justify-center">
-                        <button
-                            onClick={() => navigate('/create')}
-                            className="btn-primary flex items-center justify-center gap-2"
-                        >
-                            <RotateCcw size={20} /> HOST ANOTHER
-                        </button>
-
-                        <button
-                            onClick={() => navigate('/')}
-                            className="btn-secondary flex items-center justify-center gap-2"
-                        >
-                            EXIT TO HOME
-                        </button>
-                    </div>
-                </motion.div>
+                {/* Action Buttons */}
+                <div className="flex gap-6">
+                    <button
+                        onClick={() => navigate('/create')}
+                        className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 rounded-full font-bold shadow-[0_0_20px_rgba(8,145,178,0.5)] transition-all"
+                    >
+                        Start New Quiz
+                    </button>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="px-8 py-3 bg-gray-800 hover:bg-gray-700 rounded-full font-bold border border-white/10 transition-all"
+                    >
+                        Back to Home
+                    </button>
+                </div>
             </div>
         );
     }

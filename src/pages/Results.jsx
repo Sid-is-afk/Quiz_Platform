@@ -55,15 +55,15 @@ const Results = () => {
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 gap-6 relative overflow-hidden">
             <Confetti width={windowSize.width} height={windowSize.height} numberOfPieces={300} recycle={false} />
 
             <motion.div
                 initial={{ opacity: 0, y: -50 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center mb-12 z-10"
+                className="text-center z-10"
             >
-                <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 mb-4 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]">
+                <h1 className="text-4xl md:text-7xl font-black text-center mb-2 tracking-wide leading-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]">
                     MISSION COMPLETE
                 </h1>
                 <p className="text-xl text-gray-300 tracking-widest uppercase">Performance Report Generated</p>
@@ -73,7 +73,7 @@ const Results = () => {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                className="glass-card p-12 mb-12 text-center z-10 relative group"
+                className="glass-card p-8 md:p-12 mt-4 w-full max-w-sm text-center z-10 relative group"
             >
                 <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
                 <div className="relative">
