@@ -2,6 +2,8 @@
 
 > **Real-time, Multiplayer, AI-Powered Quiz Experience**
 
+**[🚀 Live Demo](https://quizplatformiit.vercel.app)**
+
 ## 1. Project Overview
 The **AI Quiz Platform** is a cutting-edge, real-time multiplayer quiz application that leverages **Google's Gemini AI** to generate dynamic quizzes on any topic. Designed with a futuristic, "Glassmorphism" UI, it offers a seamless experience for hosts to create games and players to join via room codes.
 
