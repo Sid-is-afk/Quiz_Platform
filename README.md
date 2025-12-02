@@ -125,4 +125,7 @@ The platform uses **Socket.io** for real-time communication.
 -   **AI & Processing:** `@google/generative-ai`, `multer`, `pdf-parse`
 
 ## 8. Contributors
-[To be added]
+- Siddharth Kumar Jena
+- Ayutayam Sutar
+- Ashutosh Nayak
+- Krish Patra
