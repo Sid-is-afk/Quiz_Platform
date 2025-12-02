@@ -1,0 +1,37 @@
+System Requirements for AI Quiz Platform
+========================================
+
+To run this prototype locally, you must have the following tools installed and configured:
+
+1. Runtime Environment
+----------------------
+- Node.js (Version 18.0.0 or higher)
+  - Download: https://nodejs.org/
+  - Verify: `node -v`
+- npm (Node Package Manager)
+  - Included with Node.js
+  - Verify: `npm -v`
+
+2. Database
+-----------
+- MongoDB Atlas Account (Cloud Database)
+  - Sign up: https://www.mongodb.com/atlas
+  - Requirement: A valid connection string (URI)
+  - Alternative: Local MongoDB Community Server (if preferred over Cloud)
+
+3. API Keys
+-----------
+- Google Gemini API Key
+  - Get key: https://aistudio.google.com/
+  - Required for: Generating quizzes from topics and files
+
+4. Version Control (Optional but Recommended)
+---------------------------------------------
+- Git
+  - Download: https://git-scm.com/
+  - Verify: `git --version`
+
+5. Browser
+----------
+- Modern Web Browser (Chrome, Edge, Firefox, Safari)
+  - Required for: Running the React Client and testing WebSocket connections
